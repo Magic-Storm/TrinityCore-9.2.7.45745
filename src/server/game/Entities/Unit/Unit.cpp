@@ -13478,6 +13478,81 @@ void Unit::SetVirtualItem(uint32 slot, uint32 itemId, uint16 appearanceModId /*=
     SetUpdateFieldValue(virtualItemField.ModifyValue(&UF::VisibleItem::ItemVisual), itemVisual);
 }
 
+void Unit::GetAttackableUnitListInRange(std::list<Unit*>& list, float fMaxSearchRange) const
+{
+    CellCoord p(Trinity::ComputeCellCoord(GetPositionX(), GetPositionY()));
+    Cell cell(p);
+    cell.SetNoCreate();
+
+    Trinity::AttackableUnitInObjectRangeCheck u_check(this, fMaxSearchRange);
+    Trinity::UnitListSearcher<Trinity::AttackableUnitInObjectRangeCheck> searcher(this, list, u_check);
+
+    TypeContainerVisitor<Trinity::UnitListSearcher<Trinity::AttackableUnitInObjectRangeCheck>, WorldTypeMapContainer > world_unit_searcher(searcher);
+    TypeContainerVisitor<Trinity::UnitListSearcher<Trinity::AttackableUnitInObjectRangeCheck>, GridTypeMapContainer >  grid_unit_searcher(searcher);
+
+    cell.Visit(p, world_unit_searcher, *GetMap(), *this, fMaxSearchRange);
+    cell.Visit(p, grid_unit_searcher, *GetMap(), *this, fMaxSearchRange);
+}
+
+void Unit::GetAttackableUnitListInRangeFromCenterObj(WorldObject* centerObj, std::list<Unit*>& list, float fMaxSearchRange) const
+{
+    CellCoord p(Trinity::ComputeCellCoord(centerObj->GetPositionX(), centerObj->GetPositionY()));
+    Cell cell(p);
+    cell.SetNoCreate();
+
+    Trinity::AttackableUnitInObjectRangeCheck u_check(this, fMaxSearchRange, true, centerObj);
+    Trinity::UnitListSearcher<Trinity::AttackableUnitInObjectRangeCheck> searcher(this, list, u_check);
+
+    TypeContainerVisitor<Trinity::UnitListSearcher<Trinity::AttackableUnitInObjectRangeCheck>, WorldTypeMapContainer > world_unit_searcher(searcher);
+    TypeContainerVisitor<Trinity::UnitListSearcher<Trinity::AttackableUnitInObjectRangeCheck>, GridTypeMapContainer >  grid_unit_searcher(searcher);
+
+    cell.Visit(p, world_unit_searcher, *GetMap(), *centerObj, fMaxSearchRange);
+    cell.Visit(p, grid_unit_searcher, *GetMap(), *centerObj, fMaxSearchRange);
+}
+
+void Unit::GetFriendlyUnitListInRange(std::list<Unit*>& list, float fMaxSearchRange, bool exceptSelf /*= false*/) const
+{
+    CellCoord p(Trinity::ComputeCellCoord(GetPositionX(), GetPositionY()));
+    Cell cell(p);
+    cell.SetNoCreate();
+
+    Trinity::AnyFriendlyUnitInObjectRangeCheck u_check(this, this, fMaxSearchRange, false, exceptSelf);
+    Trinity::UnitListSearcher<Trinity::AnyFriendlyUnitInObjectRangeCheck> searcher(this, list, u_check);
+
+    TypeContainerVisitor<Trinity::UnitListSearcher<Trinity::AnyFriendlyUnitInObjectRangeCheck>, WorldTypeMapContainer > world_unit_searcher(searcher);
+    TypeContainerVisitor<Trinity::UnitListSearcher<Trinity::AnyFriendlyUnitInObjectRangeCheck>, GridTypeMapContainer >  grid_unit_searcher(searcher);
+
+    cell.Visit(p, world_unit_searcher, *GetMap(), *this, fMaxSearchRange);
+    cell.Visit(p, grid_unit_searcher, *GetMap(), *this, fMaxSearchRange);
+}
+
+void Unit::GetAreaTriggerListWithSpellIDInRange(std::list<AreaTrigger*>& list, uint32 spellid, float fMaxSearchRange) const
+{
+    CellCoord l_Coords(Trinity::ComputeCellCoord(GetPositionX(), GetPositionY()));
+    Cell l_Cell(l_Coords);
+    l_Cell.SetNoCreate();
+
+    Trinity::AnyAreatriggerInObjectRangeCheck check(this, fMaxSearchRange);
+    Trinity::AreaTriggerListSearcher<Trinity::AnyAreatriggerInObjectRangeCheck> searcher(this, list, check);
+
+    TypeContainerVisitor<Trinity::AreaTriggerListSearcher<Trinity::AnyAreatriggerInObjectRangeCheck>, WorldTypeMapContainer> l_WorldSearcher(searcher);
+    TypeContainerVisitor<Trinity::AreaTriggerListSearcher<Trinity::AnyAreatriggerInObjectRangeCheck>, GridTypeMapContainer>  l_GridSearcher(searcher);
+
+    l_Cell.Visit(l_Coords, l_WorldSearcher, *GetMap(), *this, fMaxSearchRange);
+    l_Cell.Visit(l_Coords, l_GridSearcher, *GetMap(), *this, fMaxSearchRange);
+
+    if (!list.empty())
+    {
+        list.remove_if([spellid](AreaTrigger* p_AreaTrigger) -> bool
+            {
+                if (p_AreaTrigger == nullptr || p_AreaTrigger->GetSpellId() != spellid)
+                    return true;
+
+                return false;
+            });
+    }
+}
+
 void Unit::Talk(uint32 textId, ChatMsg msgType, float textRange, WorldObject const* target)
 {
     if (!sBroadcastTextStore.LookupEntry(textId))

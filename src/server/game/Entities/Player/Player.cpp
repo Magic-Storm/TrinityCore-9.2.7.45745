@@ -13864,7 +13864,7 @@ void Player::OnGossipSelect(WorldObject* source, uint32 gossipListId, uint32 men
             break;
         }
         case GossipOptionNpc::Vendor:
-            GetSession()->SendListInventory(guid);
+            GetSession()->SendListInventory(guid, menuItemData->GossipActionMenuId);
             break;
         case GossipOptionNpc::TaxiNode:
             GetSession()->SendTaxiMenu(source->ToCreature());
@@ -13886,7 +13886,7 @@ void Player::OnGossipSelect(WorldObject* source, uint32 gossipListId, uint32 men
             break;
         case GossipOptionNpc::PetitionVendor:
             PlayerTalkClass->SendCloseGossip();
-            GetSession()->SendPetitionShowList(guid, menuItemData->GossipActionMenuId);
+            GetSession()->SendPetitionShowList(guid);
             break;
         case GossipOptionNpc::TabardVendor:
             PlayerTalkClass->SendCloseGossip();

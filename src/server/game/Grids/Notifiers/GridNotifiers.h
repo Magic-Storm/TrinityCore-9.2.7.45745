@@ -677,6 +677,39 @@ namespace Trinity
         template<class NOT_INTERESTED> void Visit(GridRefManager<NOT_INTERESTED> &) { }
     };
 
+    /// AreaTriggers searchers
+    template<class Check>
+    struct AreaTriggerListSearcher
+    {
+        WorldObject const* i_searcher;
+        std::list<AreaTrigger*>& i_objects;
+        Check& i_check;
+
+        AreaTriggerListSearcher(WorldObject const* searcher, std::list<AreaTrigger*>& objects, Check& check)
+            : i_searcher(searcher), i_objects(objects), i_check(check) {
+        }
+
+        void Visit(AreaTriggerMapType& m);
+
+        template<class NOT_INTERESTED> void Visit(GridRefManager<NOT_INTERESTED>&) {}
+    };
+
+    template<class Check>
+    struct AreaTriggerSearcher
+    {
+        WorldObject const* i_searcher;
+        AreaTrigger*& i_object;
+        Check& i_check;
+
+        AreaTriggerSearcher(WorldObject const* searcher, AreaTrigger*& result, Check& check)
+            : i_searcher(searcher), i_object(result), i_check(check) {
+        }
+
+        void Visit(AreaTriggerMapType& m);
+
+        template<class NOT_INTERESTED> void Visit(GridRefManager<NOT_INTERESTED>&) {}
+    };
+
     // CHECKS && DO classes
 
     // WorldObject check classes
@@ -1116,6 +1149,43 @@ namespace Trinity
             WorldObject const* i_obj;
             float i_range;
             bool i_check3D;
+    };
+
+    class AttackableUnitInObjectRangeCheck
+    {
+    public:
+        AttackableUnitInObjectRangeCheck(WorldObject const* obj, float range, bool check3D = true, WorldObject const* centerObj = nullptr) : i_obj(obj), i_range(range), i_check3D(check3D), i_center(centerObj ? centerObj : obj) {}
+
+        bool operator()(Unit* u) const
+        {
+            if (i_obj->IsUnit())
+                if (u->IsAlive() && i_center->IsWithinDistInMap(u, i_range, i_check3D) && i_obj->ToUnit()->IsValidAttackTarget(u))
+                    return true;
+
+            return false;
+        }
+
+    private:
+        WorldObject const* i_obj;
+        float i_range;
+        bool i_check3D;
+        WorldObject const* i_center;
+    };
+
+    class AnyAreatriggerInObjectRangeCheck
+    {
+    public:
+        AnyAreatriggerInObjectRangeCheck(WorldObject const* object, float range) : m_Object(object), m_Range(range) {}
+        bool operator()(AreaTrigger* areaTrigger)
+        {
+            if (m_Object->IsWithinDistInMap(areaTrigger, m_Range))
+                return true;
+
+            return false;
+        }
+    private:
+        WorldObject const* m_Object;
+        float m_Range;
     };
 
     // Success at unit in range, range update for next check (this can be use with UnitLastSearcher to find nearest unit)

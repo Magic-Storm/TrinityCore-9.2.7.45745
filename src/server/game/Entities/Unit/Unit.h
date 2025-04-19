@@ -1882,6 +1882,11 @@ class TC_GAME_API Unit : public WorldObject
         // enables / disables combat interaction of this unit
         void SetIsCombatDisallowed(bool apply) { _isCombatDisallowed = apply; }
 
+        void GetAttackableUnitListInRange(std::list<Unit*>& list, float fMaxSearchRange) const;
+        void GetAttackableUnitListInRangeFromCenterObj(WorldObject* centerObj, std::list<Unit*>& list, float fMaxSearchRange) const;
+        void GetFriendlyUnitListInRange(std::list<Unit*>& list, float fMaxSearchRange, bool exceptSelf = false) const;
+        void GetAreaTriggerListWithSpellIDInRange(std::list<AreaTrigger*>& list, uint32 spellid, float fMaxSearchRange) const;
+
         std::string GetDebugInfo() const override;
 
         UF::UpdateField<UF::UnitData, 0, TYPEID_UNIT> m_unitData;

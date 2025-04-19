@@ -50,6 +50,8 @@ EndScriptData */
 #include "SupportMgr.h"
 #include "WaypointManager.h"
 #include "World.h"
+#include "../Custom/MagicStone.h"
+#include "../Custom/CustomInstanceScript.h"
 
 #if TRINITY_COMPILER == TRINITY_COMPILER_GNU
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
@@ -458,6 +460,7 @@ public:
 
             Field* fields = result->Fetch();
             sObjectMgr->LoadCreatureTemplate(fields);
+            sObjectMgr->LoadCreatureTemplateModel(entry);
             sObjectMgr->CheckCreatureTemplate(cInfo);
         }
 

@@ -28,8 +28,8 @@ struct npc_battle_training : public ScriptedAI
             ClearGossipMenuFor(p_Player);
             p_Player->PrepareQuestMenu(me->GetGUID());
             if (p_Player->GetQuestStatus(700001) == QUEST_STATUS_INCOMPLETE)
-                AddGossipItemFor(p_Player, GossipOptionIcon::BattleMaster, "Battle!", 0, 1);
-            AddGossipItemFor(p_Player, GossipOptionIcon::None, "Nevermind", 0, 0);
+                AddGossipItemFor(p_Player, GossipOptionNpc::BattleMaster, "Battle!", 0, 1);
+            AddGossipItemFor(p_Player, GossipOptionNpc::None, "Nevermind", 0, 0);
             SendGossipMenuFor(p_Player, me->GetEntry(), me);
             return true;
         }
@@ -80,8 +80,8 @@ struct npc_item_upgrade_tutorial : public ScriptedAI
             ClearGossipMenuFor(p_Player);
             p_Player->PrepareQuestMenu(me->GetGUID());
             if (p_Player->GetQuestStatus(700002) == QUEST_STATUS_INCOMPLETE)
-                AddGossipItemFor(p_Player, GossipOptionIcon::BattleMaster, "How do you upgrade?", 0, 1);
-            AddGossipItemFor(p_Player, GossipOptionIcon::None, "Nevermind", 0, 0);
+                AddGossipItemFor(p_Player, GossipOptionNpc::BattleMaster, "How do you upgrade?", 0, 1);
+            AddGossipItemFor(p_Player, GossipOptionNpc::None, "Nevermind", 0, 0);
             SendGossipMenuFor(p_Player, me->GetEntry(), me);
             return true;
         }
@@ -107,7 +107,7 @@ struct npc_infernal_core_360607 : public ScriptedAI
 
         void InitializeAI() override
         {
-            me->SetUnitFlags(UnitFlags::UNIT_FLAG_NON_ATTACKABLE);
+            me->SetUnitFlag(UnitFlags::UNIT_FLAG_NON_ATTACKABLE);
             m_Events.ScheduleEvent(1, 100ms);
         }
 
@@ -176,8 +176,8 @@ struct npc_skipbot_3000 : public ScriptedAI
             ClearGossipMenuFor(p_Player);
             p_Player->PrepareQuestMenu(me->GetGUID());
             if (DidNotCompleteTutorialQuests(p_Player))
-                AddGossipItemFor(p_Player, GossipOptionIcon::AdventureMap, "Skip tutorial.", 0, 1);
-            AddGossipItemFor(p_Player, GossipOptionIcon::None, "Nevermind", 0, 0);
+                AddGossipItemFor(p_Player, GossipOptionNpc::AdventureMap, "Skip tutorial.", 0, 1);
+            AddGossipItemFor(p_Player, GossipOptionNpc::None, "Nevermind", 0, 0);
             SendGossipMenuFor(p_Player, me->GetEntry(), me);
             return true;
         }
@@ -243,8 +243,8 @@ struct npc_currency_guy : public ScriptedAI
             ClearGossipMenuFor(p_Player);
             p_Player->PrepareQuestMenu(me->GetGUID());
             if (p_Player->GetQuestStatus(700005) == QUEST_STATUS_INCOMPLETE)
-                AddGossipItemFor(p_Player, GossipOptionIcon::AdventureMap, "What are currencies for?", 0, 1);
-            AddGossipItemFor(p_Player, GossipOptionIcon::None, "Nevermind", 0, 0);
+                AddGossipItemFor(p_Player, GossipOptionNpc::AdventureMap, "What are currencies for?", 0, 1);
+            AddGossipItemFor(p_Player, GossipOptionNpc::None, "Nevermind", 0, 0);
             SendGossipMenuFor(p_Player, me->GetEntry(), me);
             return true;
         }
@@ -280,10 +280,10 @@ struct npc_char_services : public ScriptedAI
         {
             ClearGossipMenuFor(p_Player);
             p_Player->PrepareQuestMenu(me->GetGUID());
-            AddGossipItemFor(p_Player, GossipOptionIcon::None, "|TInterface\\ICONS\\achievement_general.BLP:30:30:-28:0|tReset my talents.", 0, 2);
-            AddGossipItemFor(p_Player, GossipOptionIcon::None, "|TInterface\\ICONS\\inv_inscription_talenttome01.BLP:30:30:-28:0|tGive me 5 tomes.", 0, 1);
-            AddGossipItemFor(p_Player, GossipOptionIcon::None, "|TInterface\\ICONS\\inv_misc_enggizmos_32.BLP:30:30:-28:0|tGive me the Magic Stone.", 0, 3);
-            AddGossipItemFor(p_Player, GossipOptionIcon::None, "|TInterface\\ICONS\\inv_offhand_1h_ulduarraid_d_01.BLP:30:30:-28:0|tGive me the Item Upgrader.", 0, 4);
+            AddGossipItemFor(p_Player, GossipOptionNpc::None, "|TInterface\\ICONS\\achievement_general.BLP:30:30:-28:0|tReset my talents.", 0, 2);
+            AddGossipItemFor(p_Player, GossipOptionNpc::None, "|TInterface\\ICONS\\inv_inscription_talenttome01.BLP:30:30:-28:0|tGive me 5 tomes.", 0, 1);
+            AddGossipItemFor(p_Player, GossipOptionNpc::None, "|TInterface\\ICONS\\inv_misc_enggizmos_32.BLP:30:30:-28:0|tGive me the Magic Stone.", 0, 3);
+            AddGossipItemFor(p_Player, GossipOptionNpc::None, "|TInterface\\ICONS\\inv_offhand_1h_ulduarraid_d_01.BLP:30:30:-28:0|tGive me the Item Upgrader.", 0, 4);
             SendGossipMenuFor(p_Player, me->GetEntry(), me);
             return true;
         }
@@ -321,7 +321,7 @@ struct npc_juno_700006 : public ScriptedAI
         {
             ClearGossipMenuFor(p_Player);
             p_Player->PrepareQuestMenu(me->GetGUID());
-            AddGossipItemFor(p_Player, GossipOptionIcon::None, "Nevermind.", 0, 2);
+            AddGossipItemFor(p_Player, GossipOptionNpc::None, "Nevermind.", 0, 2);
             if (p_Player->GetQuestStatus(700007) == QUEST_STATUS_NONE)
                 SendGossipMenuFor(p_Player, 7000060, me);
             else if (p_Player->GetQuestStatus(700008) == QUEST_STATUS_INCOMPLETE || p_Player->GetQuestStatus(700007) == QUEST_STATUS_NONE)
@@ -391,9 +391,9 @@ struct npc_mall_weapongiver : public ScriptedAI
             ClearGossipMenuFor(player);
 
             if (player->HasItemCount(700316, 1))
-                AddGossipItemFor(player, GossipOptionIcon::None, "Create Weapon", 0, 2, "|cffFF0000Accepting this will use |cffff8000[Legendary Dust]|cffFF0000x1|R", 0, false);
+                AddGossipItemFor(player, GossipOptionNpc::None, "Create Weapon", 0, 2, "|cffFF0000Accepting this will use |cffff8000[Legendary Dust]|cffFF0000x1|R", 0, false);
 
-            AddGossipItemFor(player, GossipOptionIcon::None, "Preview Weapon", 0, 1);
+            AddGossipItemFor(player, GossipOptionNpc::None, "Preview Weapon", 0, 1);
             SendGossipMenuFor(player, 1, me);
             return true;
         }
