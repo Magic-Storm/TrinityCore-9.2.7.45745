@@ -21,4 +21,29 @@
 // void Add${NameOfDirectory}Scripts()
 void AddCustomScripts()
 {
+void AddSC_LoginScript();
+void AddSC_MallScripts();
+void AddSC_item_upgrader();
+void AddSC_MaelstromDungeon();
+void AddSC_AutoLootSystem();
+void AddSC_MagicStone();
+void AddSC_npc_currency_exchange();
+void AddSC_Crapopolis();
+void AddSC_Skyhold();
+void AddSC_CustomInstanceScript();
+void AddSC_cs_custom();
+
+void AddCustomScripts()
+{
+    AddSC_LoginScript();
+    AddSC_MallScripts();
+    AddSC_item_upgrader();
+    AddSC_MaelstromDungeon();
+    AddSC_AutoLootSystem();
+    AddSC_MagicStone();
+    AddSC_npc_currency_exchange();
+    AddSC_Crapopolis();
+    AddSC_Skyhold();
+    AddSC_CustomInstanceScript();
+    AddSC_cs_custom();
 }

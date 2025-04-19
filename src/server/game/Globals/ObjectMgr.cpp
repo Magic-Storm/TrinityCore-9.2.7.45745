@@ -6197,6 +6197,7 @@ void ObjectMgr::LoadPageTextLocales()
 
 void ObjectMgr::LoadInstanceTemplate()
 {
+    _instanceTemplateStore.clear();
     uint32 oldMSTime = getMSTime();
 
     //                                                0     1       2

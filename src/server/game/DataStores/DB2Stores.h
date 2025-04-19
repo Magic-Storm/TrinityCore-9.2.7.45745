@@ -470,10 +470,11 @@ public:
     void Map2ZoneCoordinates(uint32 areaId, float& x, float& y) const;
     bool IsUiMapPhase(uint32 phaseId) const;
     WMOAreaTableEntry const* GetWMOAreaTable(int32 rootId, int32 adtId, int32 groupId) const;
+    std::vector<uint32> GetSpellLabelSpellsByCategoryId(uint32 categoryId) const;
+    void InsertNewHotfix(uint32 tableHash, uint32 recordId);
 
 private:
     friend class DB2HotfixGeneratorBase;
-    void InsertNewHotfix(uint32 tableHash, uint32 recordId);
     int32 _maxHotfixId = 0;
 };
 

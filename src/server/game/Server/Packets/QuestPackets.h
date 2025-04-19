@@ -186,7 +186,7 @@ namespace WorldPackets
             bool ReadyForTranslation        = false;
         };
 
-        class QueryQuestInfoResponse final : public ServerPacket
+        class TC_GAME_API QueryQuestInfoResponse final : public ServerPacket
         {
         public:
             QueryQuestInfoResponse() : ServerPacket(SMSG_QUERY_QUEST_INFO_RESPONSE, 1200) { }
@@ -372,7 +372,7 @@ namespace WorldPackets
             uint8 Type      = 0;
         };
 
-        class QuestGiverQuestDetails final : public ServerPacket
+        class TC_GAME_API QuestGiverQuestDetails final : public ServerPacket
         {
         public:
             QuestGiverQuestDetails() : ServerPacket(SMSG_QUEST_GIVER_QUEST_DETAILS, 1000) { }
@@ -727,6 +727,29 @@ namespace WorldPackets
             bool CloseChoiceFrame = false;
             bool HideWarboardHeader = false;
             bool KeepOpenAfterChoice = false;
+        };
+
+        struct TreasurePickItem
+        {
+            Item::ItemInstance Item;
+            uint32 Quantity;
+        };
+
+        class TC_GAME_API TreasurePickerResponse final : public ServerPacket
+        {
+        public:
+            TreasurePickerResponse() : ServerPacket(SMSG_TREASURE_PICKER_RESPONSE, 1000) { }
+
+            WorldPacket const* Write() override;
+
+            uint32 QuestID = 0;
+            uint32 TreasurePickerID = 0;
+
+            uint64 MoneyReward = 0;
+            int32 Flags = 0;
+
+            std::vector<TreasurePickItem> Items;
+
         };
 
         class ChoiceResponse final : public ClientPacket

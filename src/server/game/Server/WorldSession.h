@@ -1930,6 +1930,7 @@ class TC_GAME_API WorldSession
 
         // Packets cooldown
         time_t _calendarEventCreationCooldown;
+        TimePoint m_LoadScreenOpcodeTime;
 
         std::unique_ptr<BattlePets::BattlePetMgr> _battlePetMgr;
 

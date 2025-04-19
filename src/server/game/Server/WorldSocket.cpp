@@ -441,9 +441,14 @@ WorldSocket::ReadDataHandlerResult WorldSocket::ReadDataHandler()
             TC_LOG_ERROR("network", "WorldSocket::ReadDataHandler: client %s sent CMSG_KEEP_ALIVE without being authenticated", GetRemoteIpAddress().to_string().c_str());
             return ReadDataHandlerResult::Error;
         case CMSG_LOG_DISCONNECT:
+        {
             LogOpcodeText(opcode, sessionGuard);
+          //  uint32 disconnectReason = 0;
+           // packet << disconnectReason;
+          //  TC_LOG_ERROR("network", "WorldSocket::ReadDataHandler(): CMSG_LOG_DISCONNECT disconnectReason: %u", disconnectReason);
             packet.rfinish();   // contains uint32 disconnectReason;
             break;
+        }
         case CMSG_ENABLE_NAGLE:
             LogOpcodeText(opcode, sessionGuard);
             SetNoDelay(false);
