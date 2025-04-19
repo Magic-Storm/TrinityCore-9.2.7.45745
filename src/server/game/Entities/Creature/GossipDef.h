@@ -216,11 +216,13 @@ class InteractionData
         {
             SourceGuid.Clear();
             TrainerId = 0;
+            VendorId = 0;
             PlayerChoiceId = 0;
         }
 
         ObjectGuid SourceGuid;
         uint32 TrainerId;
+        uint32 VendorId;
         uint32 PlayerChoiceId;
 };
 

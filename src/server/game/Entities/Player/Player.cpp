@@ -13886,7 +13886,7 @@ void Player::OnGossipSelect(WorldObject* source, uint32 gossipListId, uint32 men
             break;
         case GossipOptionNpc::PetitionVendor:
             PlayerTalkClass->SendCloseGossip();
-            GetSession()->SendPetitionShowList(guid);
+            GetSession()->SendPetitionShowList(guid, menuItemData->GossipActionMenuId);
             break;
         case GossipOptionNpc::TabardVendor:
             PlayerTalkClass->SendCloseGossip();
@@ -22253,7 +22253,11 @@ bool Player::BuyItemFromVendorSlot(ObjectGuid vendorguid, uint32 vendorslot, uin
         return false;
     }
 
-    VendorItemData const* vItems = creature->GetVendorItems();
+    uint32 currentVendor = PlayerTalkClass->GetInteractionData().VendorId;
+    if (currentVendor && vendorguid != PlayerTalkClass->GetInteractionData().SourceGuid)
+        return false; // Cheating
+
+    VendorItemData const* vItems = currentVendor ? sObjectMgr->GetNpcVendorItemList(currentVendor) : creature->GetVendorItems();
     if (!vItems || vItems->Empty())
     {
         SendBuyError(BUY_ERR_CANT_FIND_ITEM, creature, item, 0);
