@@ -763,6 +763,17 @@ namespace WorldPackets
             int32 ResponseIdentifier = 0;
             bool IsReroll = false;
         };
+
+        class QueryTreasurePicker final : public ClientPacket
+        {
+        public:
+            QueryTreasurePicker(WorldPacket&& packet) : ClientPacket(CMSG_QUERY_TREASURE_PICKER, std::move(packet)) { }
+
+            void Read() override;
+
+            int32 QuestId = 0;
+            int32 QuestTimer = 0;
+        };
     }
 }
 
