@@ -17,6 +17,7 @@ EXPORTS
     CascOpenFile
     CascOpenLocalFile
     CascGetFileInfo
+    CascSetFileFlags
     CascGetFileSize
     CascGetFileSize64
     CascSetFilePointer
@@ -30,6 +31,8 @@ EXPORTS
 
     CascAddEncryptionKey
     CascAddStringEncryptionKey
+    CascImportKeysFromString
+    CascImportKeysFromFile
     CascFindEncryptionKey
     CascGetNotFoundEncryptionKey
 
