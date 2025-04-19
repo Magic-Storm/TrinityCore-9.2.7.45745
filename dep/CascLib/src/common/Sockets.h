@@ -14,6 +14,10 @@
 //-----------------------------------------------------------------------------
 // Defines
 
+#ifndef INVALID_SOCKET
+#define INVALID_SOCKET (SOCKET)(-1)
+#endif
+
 #ifndef SOCKET_ERROR
 #define SOCKET_ERROR   (-1)
 #endif
@@ -44,7 +48,7 @@ class CASC_SOCKET
 {
     public:
 
-    char * ReadResponse(const char * request, size_t request_length, CASC_MIME_RESPONSE & MimeResponse);
+    char * ReadResponse(const char * request, size_t request_length = 0, size_t * PtrLength = NULL);
     DWORD AddRef();
     void Release();
 
@@ -53,9 +57,9 @@ class CASC_SOCKET
     // Constructor and destructor
     static int GetSockError();
     static DWORD GetAddrInfoWrapper(const char * hostName, unsigned portNum, PADDRINFO hints, PADDRINFO * ppResult);
-    static HANDLE CreateAndConnect(PADDRINFO remoteItem);
-    static HANDLE ReconnectAfterShutdown(HANDLE & sock, PADDRINFO remoteItem);
-    static PCASC_SOCKET New(PADDRINFO remoteList, PADDRINFO remoteItem, const char * hostName, unsigned portNum, HANDLE sock);
+    static SOCKET CreateAndConnect(addrinfo * remoteItem);
+    static SOCKET ReconnectAfterShutdown(SOCKET & sock, addrinfo * remoteItem);
+    static PCASC_SOCKET New(addrinfo * remoteList, addrinfo * remoteItem, const char * hostName, unsigned portNum, SOCKET sock);
     static PCASC_SOCKET Connect(const char * hostName, unsigned portNum);
 
     // Frees all resources and deletes the socket
@@ -72,7 +76,7 @@ class CASC_SOCKET
     PADDRINFO remoteList;               // List of the remote host informations
     PADDRINFO remoteItem;               // The particular host picked during the last connection attempt
     CASC_LOCK Lock;                     // Lock for single threaded access
-    HANDLE sock;                        // Opened and connected socket
+    SOCKET sock;                        // Opened and connected socket
     DWORD dwRefCount;                   // Number of references
     DWORD portNum;                      // Port number
     char hostName[1];                   // Buffer for storing remote host (variable length)

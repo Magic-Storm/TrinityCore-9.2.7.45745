@@ -21,15 +21,9 @@
     #include <zlib.h>
 #endif
 
-#if defined(_DEBUG) && !defined(CASCLIB_NODEBUG)
-#define CASCLIB_DEBUG
-//#define CASCLIB_WRITE_VERIFIED_FILENAMES            // If defined, TRootHandler_WoW will save all files whose hashes are confirmed
-#endif
-
 #include "CascPort.h"
 #include "common/Common.h"
 #include "common/Array.h"
-#include "common/ArraySparse.h"
 #include "common/Map.h"
 #include "common/FileTree.h"
 #include "common/FileStream.h"
@@ -41,9 +35,8 @@
 #include "common/RootHandler.h"
 #include "common/Sockets.h"
 
-// Headers for hashes used in CascLib
-#include "hashes/md5.h"
-#include "hashes/sha1.h"
+// Headers from Alexander Peslyak's MD5 implementation
+#include "md5/md5.h"
 
 // For HashStringJenkins
 #include "jenkins/lookup.h"
@@ -54,7 +47,7 @@
 //-----------------------------------------------------------------------------
 // CascLib private defines
 
-#if defined(CASCLIB_DEBUG) && defined(CASCLIB_DEV)
+#ifdef _DEBUG
 #define BREAK_ON_XKEY3(CKey, v0, v1, v2) if(CKey[0] == v0 && CKey[1] == v1 && CKey[2] == v2) { __debugbreak(); }
 #define BREAKIF(condition)               if(condition)  { __debugbreak(); }
 #else
@@ -66,7 +59,10 @@
 #define CASC_MAGIC_FILE     0x454C494643534143      // 'CASCFILE'
 #define CASC_MAGIC_FIND     0x444E494643534143      // 'CASCFIND'
 
-// The maximum size of an online file
+// For CASC_CDN_DOWNLOAD::Flags
+#define CASC_CDN_FORCE_DOWNLOAD         0x0001      // Force downloading the file even if in the cache
+
+// The maximum size of an inline file
 #define CASC_MAX_ONLINE_FILE_SIZE   0x40000000
 
 //-----------------------------------------------------------------------------
@@ -75,17 +71,10 @@
 typedef enum _CBLD_TYPE
 {
     CascBuildNone = 0,                              // No build type found
-    CascBuildDb,                                    // .build.db (older storages)
     CascBuildInfo,                                  // .build.info
-    CascVersions                                    // versions (cached or online)
+    CascBuildDb,                                    // .build.db (older storages)
+    CascVersionsDb                                  // versions (downloaded online)
 } CBLD_TYPE, *PCBLD_TYPE;
-
-typedef enum _CPATH_TYPE
-{
-    PathTypeConfig,                                 // The "config" subfolder
-    PathTypeData,                                   // The "data" subfolder
-    PathTypePatch                                   // The "patch" subfolder
-} CPATH_TYPE, *PCPATH_TYPE;
 
 typedef enum _CSTRTG
 {
@@ -101,19 +90,12 @@ typedef struct _CASC_TAG_ENTRY
     char TagName[1];                                // Tag name. Variable length.
 } CASC_TAG_ENTRY, *PCASC_TAG_ENTRY;
 
-// Information about CASC main file
-typedef struct _CASC_BUILD_FILE
-{
-    LPCTSTR szPlainName;                            // Plain file name
-    CBLD_TYPE BuildFileType;                        // Build file type
-    TCHAR   szFullPath[MAX_PATH];                   // Full file name
-} CASC_BUILD_FILE, *PCASC_BUILD_FILE;
-
 // Information about index file
 typedef struct _CASC_INDEX
 {
-    CASC_BLOB FileData;
     LPTSTR szFileName;                              // Full name of the index file
+    LPBYTE pbFileData;                              // Loaded content of the index file
+    size_t cbFileData;                               // Size of the index file
     DWORD NewSubIndex;                              // New subindex
     DWORD OldSubIndex;                              // Old subindex
 } CASC_INDEX, *PCASC_INDEX;
@@ -247,15 +229,30 @@ typedef struct _CASC_FILE_SPAN
 
 } CASC_FILE_SPAN, *PCASC_FILE_SPAN;
 
-// Archive information for a remote file
-typedef struct _CASC_ARCHIVE_INFO
+// Structure for downloading a file from the CDN (https://wowdev.wiki/TACT#File_types)
+// Remote path is combined as the following:
+//  [szCdnsHost]       /[szCdnsPath]/[szPathType]/EKey[0-1]/EKey[2-3]/[EKey].[Extension]
+//  level3.blizzard.com/tpr/bnt001  /data        /fe       /3d       /fe3d7cf9d04e07066de32bd95a5c2627.index
+typedef struct _CASC_CDN_DOWNLOAD
 {
-    DWORD ArchiveIndex;                             // This is the index of the archive
-    DWORD ArchiveOffs;                              // The file is within an archive at this offset
-    DWORD EncodedSize;                              // The size of the file within the archive
-    BYTE ArchiveKey[MD5_HASH_SIZE];                // This is the CKey of the archive
+    ULONGLONG ArchiveOffs;                          // Archive offset (if pbArchiveKey != NULL)
+    LPCTSTR szCdnsHost;                             // Address of the remote CDN server. ("level3.blizzard.com")
+                                                    // If NULL, the downloader will try all CDN servers from the storage
+    LPCTSTR szCdnsPath;                             // Remote CDN path ("tpr/bnt001")
+    LPCTSTR szPathType;                             // Path type ("config", "data", "patch")
+    LPCTSTR szLoPaType;                             // Local path type ("config", "data", "patch"). If NULL, it's gonna be the same like szPathType, If "", then it's not used
+    LPCTSTR szFileName;                             // Plain file name, without path and extension
+    LPBYTE  pbArchiveKey;                            // If non-NULL, then the file is present in the archive.
+    LPBYTE  pbEKey;                                 // 16-byte EKey of the file of of the archive
+    LPCTSTR szExtension;                            // Extension for the file. Can be NULL.
 
-} CASC_ARCHIVE_INFO, *PCASC_ARCHIVE_INFO;
+    LPTSTR szLocalPath;                             // Pointer to the variable that, upon success, reveives the local path where the file was downloaded
+    size_t ccLocalPath;                             // Maximum length of szLocalPath, in TCHARs
+    DWORD ArchiveIndex;                             // Index of the archive (if pbArchiveKey != NULL)
+    DWORD EncodedSize;                              // Encoded length (if pbArchiveKey != NULL)
+    DWORD Flags;                                    // See CASC_CDN_FLAG_XXX
+
+} CASC_CDN_DOWNLOAD, *PCASC_CDN_DOWNLOAD;
 
 //-----------------------------------------------------------------------------
 // Structures for CASC storage and CASC file
@@ -277,22 +274,6 @@ struct TCascStorage
                 hs->ClassName == CASC_MAGIC_STORAGE) ? hs : NULL;
     }
 
-    DWORD SetProductCodeName(LPCSTR szNewCodeName, size_t nLength = 0)
-    {
-        if(szCodeName == NULL && szNewCodeName != NULL)
-        {
-            // Make sure we have the length
-            if(nLength == 0)
-                nLength = strlen(szNewCodeName);
-
-            // Allocate the code name buffer and copy from ANSI string
-            if((szCodeName = CASC_ALLOC<TCHAR>(nLength + 1)) == NULL)
-                return ERROR_NOT_ENOUGH_MEMORY;
-            CascStrCopy(szCodeName, nLength + 1, szNewCodeName, nLength);
-        }
-        return ERROR_SUCCESS;
-    }
-
     // Class recognizer. Has constant value of 'CASCSTOR' (CASC_MAGIC_STORAGE)
     ULONGLONG ClassName;
 
@@ -301,33 +282,31 @@ struct TCascStorage
     CASC_LOCK StorageLock;                          // Lock for multi-threaded operations
 
     LPCTSTR szIndexFormat;                          // Format of the index file name
+    LPTSTR  szCdnHostUrl;                           // CDN host URL for online storage
     LPTSTR  szCodeName;                             // On local storage, this select a product in a multi-product storage. For online storage, this selects a product
     LPTSTR  szRootPath;                             // Path where the build file is
-    LPTSTR  szDataPath;                             // The directory where data files are
-    LPTSTR  szIndexPath;                            // The directory where index files are
-    LPTSTR  szFilesPath;                            // The directory where raw files are
-    LPTSTR  szConfigPath;                           // The directory with configs
-    LPTSTR  szMainFile;                             // Main storage file (".build.info", ".build.db", "versions")
-    LPTSTR  szCdnHostUrl;                           // URL of the ribbit/http server where to download the "versions" and "cdns" files
-    LPTSTR  szCdnServers;                           // List of CDN servers, separated by space
+    LPTSTR  szDataPath;                             // This is the directory where data files are
+    LPTSTR  szIndexPath;                            // This is the directory where index files are
+    LPTSTR  szBuildFile;                            // Build file name (.build.info or .build.db)
+    LPTSTR  szCdnServers;                           // Multi-SZ list of CDN servers
     LPTSTR  szCdnPath;                              // Remote CDN sub path for the product
     LPSTR   szRegion;                               // Product region. Only when "versions" is used as storage root file
     LPSTR   szBuildKey;                             // Product build key, aka MD5 of the build file
-    DWORD dwDefaultLocale;                          // Mask of installed localles
+    DWORD dwDefaultLocale;                          // Default locale, read from ".build.info"
     DWORD dwBuildNumber;                            // Product build number
     DWORD dwRefCount;                               // Number of references
     DWORD dwFeatures;                               // List of CASC features. See CASC_FEATURE_XXX
 
     CBLD_TYPE BuildFileType;                        // Type of the build file
 
-    CASC_BLOB CdnConfigKey;                         // Currently selected CDN config file. Points to "config\%02X\%02X\%s
-    CASC_BLOB CdnBuildKey;                          // Currently selected CDN build file. Points to "config\%02X\%02X\%s
+    QUERY_KEY CdnConfigKey;                         // Currently selected CDN config file. Points to "config\%02X\%02X\%s
+    QUERY_KEY CdnBuildKey;                          // Currently selected CDN build file. Points to "config\%02X\%02X\%s
 
-    CASC_BLOB ArchiveGroup;                         // Key array of the "archive-group"
-    CASC_BLOB ArchivesKey;                          // Key array of the "archives"
-    CASC_BLOB PatchArchivesKey;                     // Key array of the "patch-archives"
-    CASC_BLOB PatchArchivesGroup;                   // Key array of the "patch-archive-group"
-    CASC_BLOB BuildFiles;                           // List of supported build files
+    QUERY_KEY ArchiveGroup;                         // Key array of the "archive-group"
+    QUERY_KEY ArchivesKey;                          // Key array of the "archives"
+    QUERY_KEY PatchArchivesKey;                     // Key array of the "patch-archives"
+    QUERY_KEY PatchArchivesGroup;                   // Key array of the "patch-archive-group"
+    QUERY_KEY BuildFiles;                           // List of supported build files
 
     TFileStream * DataFiles[CASC_MAX_DATA_FILES];   // Array of open data files
     CASC_INDEX IndexFiles[CASC_INDEX_COUNT];        // Array of found index files
@@ -407,8 +386,9 @@ struct TCascSearch
     TCascSearch(TCascStorage * ahs, LPCTSTR aszListFile, const char * aszMask)
     {
         // Init the class
+        if(ahs != NULL)
+            hs = ahs->AddRef();
         ClassName = CASC_MAGIC_FIND;
-        hs = (ahs != NULL) ? ahs->AddRef() : NULL;
 
         // Init provider-specific data
         pCache = NULL;
@@ -460,7 +440,7 @@ struct TCascSearch
 //-----------------------------------------------------------------------------
 // Common functions (CascCommon.cpp)
 
-inline void FreeCascBlob(PCASC_BLOB pBlob)
+inline void FreeCascBlob(PQUERY_KEY pBlob)
 {
     if(pBlob != NULL)
     {
@@ -472,20 +452,17 @@ inline void FreeCascBlob(PCASC_BLOB pBlob)
 //-----------------------------------------------------------------------------
 // Text file parsing (CascFiles.cpp)
 
-bool  InvokeProgressCallback(TCascStorage * hs, CASC_PROGRESS_MSG Message, LPCSTR szObject, DWORD CurrentValue, DWORD TotalValue);
+bool  InvokeProgressCallback(TCascStorage * hs, LPCSTR szMessage, LPCSTR szObject, DWORD CurrentValue, DWORD TotalValue);
 DWORD GetFileSpanInfo(PCASC_CKEY_ENTRY pCKeyEntry, PULONGLONG PtrContentSize, PULONGLONG PtrEncodedSize = NULL);
-DWORD FetchCascFile(TCascStorage * hs, CPATH_TYPE PathType, LPBYTE pbEKey, LPCTSTR szExtension, CASC_PATH<TCHAR> & LocalPath, PCASC_ARCHIVE_INFO pArchiveInfo = NULL);
-DWORD CheckCascBuildFileExact(CASC_BUILD_FILE & BuildFile, LPCTSTR szLocalPath);
-DWORD CheckCascBuildFileDirs(CASC_BUILD_FILE & BuildFile, LPCTSTR szLocalPath);
-DWORD CheckOnlineStorage(PCASC_OPEN_STORAGE_ARGS pArgs, CASC_BUILD_FILE & BuildFile, bool bOnlineStorage);
-DWORD CheckArchiveFilesDirectories(TCascStorage * hs);
-DWORD CheckDataFilesDirectory(TCascStorage * hs);
-DWORD LoadMainFile(TCascStorage * hs);
+DWORD DownloadFileFromCDN(TCascStorage * hs, CASC_CDN_DOWNLOAD & CdnsInfo);
+DWORD CheckGameDirectory(TCascStorage * hs, LPTSTR szDirectory);
+DWORD LoadCdnsFile(TCascStorage * hs);
+DWORD LoadBuildInfo(TCascStorage * hs);
 DWORD LoadCdnConfigFile(TCascStorage * hs);
 DWORD LoadCdnBuildFile(TCascStorage * hs);
 
-DWORD LoadInternalFileToMemory(TCascStorage * hs, PCASC_CKEY_ENTRY pCKeyEntry, CASC_BLOB & FileData);
-DWORD LoadFileToMemory(LPCTSTR szFileName, CASC_BLOB & FileData);
+LPBYTE LoadInternalFileToMemory(TCascStorage * hs, PCASC_CKEY_ENTRY pCKeyEntry, DWORD * pcbFileData);
+LPBYTE LoadFileToMemory(LPCTSTR szFileName, DWORD * pcbFileData);
 bool OpenFileByCKeyEntry(TCascStorage * hs, PCASC_CKEY_ENTRY pCKeyEntry, DWORD dwOpenFlags, HANDLE * PtrFileHandle);
 bool SetCacheStrategy(HANDLE hFile, CSTRTG CacheStrategy);
 
@@ -516,19 +493,18 @@ void  FreeIndexFiles(TCascStorage * hs);
 //-----------------------------------------------------------------------------
 // Support for ROOT file
 
-DWORD RootHandler_CreateMNDX(TCascStorage * hs, CASC_BLOB & RootFile);
-DWORD RootHandler_CreateTVFS(TCascStorage * hs, CASC_BLOB & RootFile);
-DWORD RootHandler_CreateDiablo3(TCascStorage * hs, CASC_BLOB & RootFile);
-DWORD RootHandler_CreateWoW(TCascStorage * hs, CASC_BLOB & RootFile, DWORD dwLocaleMask);
-DWORD RootHandler_CreateOverwatch(TCascStorage * hs, CASC_BLOB & RootFile);
-DWORD RootHandler_CreateStarcraft1(TCascStorage * hs, CASC_BLOB & RootFile);
-DWORD RootHandler_CreateInstall(TCascStorage * hs, CASC_BLOB & InstallFile);
+DWORD RootHandler_CreateMNDX(TCascStorage * hs, LPBYTE pbRootFile, DWORD cbRootFile);
+DWORD RootHandler_CreateTVFS(TCascStorage * hs, LPBYTE pbRootFile, DWORD cbRootFile);
+DWORD RootHandler_CreateDiablo3(TCascStorage * hs, LPBYTE pbRootFile, DWORD cbRootFile);
+DWORD RootHandler_CreateWoW(TCascStorage * hs, LPBYTE pbRootFile, DWORD cbRootFile, DWORD dwLocaleMask);
+DWORD RootHandler_CreateOverwatch(TCascStorage * hs, LPBYTE pbRootFile, DWORD cbRootFile);
+DWORD RootHandler_CreateStarcraft1(TCascStorage * hs, LPBYTE pbRootFile, DWORD cbRootFile);
+DWORD RootHandler_CreateInstall(TCascStorage * hs, LPBYTE pbRootFile, DWORD cbRootFile);
 
 //-----------------------------------------------------------------------------
 // Dumpers (CascDumpData.cpp)
 
-#ifdef CASCLIB_DEBUG
-void CascDumpData(LPCSTR szFileName, const void * pvData, size_t cbData);
+#ifdef _DEBUG
 void CascDumpFile(HANDLE hFile, const char * szDumpFile = NULL);
 void CascDumpStorage(HANDLE hStorage, const char * szDumpFile = NULL);
 #endif
