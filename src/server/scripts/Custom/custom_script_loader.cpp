@@ -39,9 +39,7 @@ void AddCustomScripts()
     AddSC_MallScripts();
     AddSC_item_upgrader();
     AddSC_MaelstromDungeon();
-    AddSC_AutoLootSystem();
     AddSC_MagicStone();
-    AddSC_npc_currency_exchange();
     AddSC_Crapopolis();
     AddSC_Skyhold();
     AddSC_CustomInstanceScript();
