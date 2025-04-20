@@ -3,6 +3,7 @@
 #include "ScriptedCreature.h"
 #include "Creature.h"
 #include "Player.h"
+#include "GossipDef.h"
 #include "../CustomInstanceScript.h";
 
 struct npc_crapopolis_ai_base : public ScriptedAI
@@ -623,7 +624,7 @@ struct npc_trade_prince_gallywix_700200 : public ScriptedAI
             SendGossipMenuFor(player, me->GetEntry(), me);
             return true;
         }
-        bool OnGossipSelect(Player* player, uint32 /*menuid*/, uint32 /*gossipid*/ ) override
+        bool OnGossipSelect(Player* player, uint32 /*menuId*/, uint32 gossipListId)
         {
             CloseGossipMenuFor(player);
             return true;

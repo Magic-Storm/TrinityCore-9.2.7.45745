@@ -1885,7 +1885,7 @@ class TC_GAME_API Unit : public WorldObject
         void GetAttackableUnitListInRange(std::list<Unit*>& list, float fMaxSearchRange) const;
         void GetAttackableUnitListInRangeFromCenterObj(WorldObject* centerObj, std::list<Unit*>& list, float fMaxSearchRange) const;
         void GetFriendlyUnitListInRange(std::list<Unit*>& list, float fMaxSearchRange, bool exceptSelf = false) const;
-        void GetAreaTriggerListWithSpellIDInRange(std::list<AreaTrigger*>& list, uint32 spellid, float fMaxSearchRange) const;
+        //void GetAreaTriggerListWithSpellIDInRange(std::list<AreaTrigger*>& list, uint32 spellid, float fMaxSearchRange) const;
 
         std::string GetDebugInfo() const override;
 

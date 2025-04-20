@@ -216,7 +216,81 @@ namespace Trinity
 
     // SEARCHERS & LIST SEARCHERS & WORKERS
 
-    // WorldObject searchers & workers
+// WorldObject searchers & workers
+    enum class WorldObjectSearcherContinuation
+    {
+        Continue,
+        Return
+    };
+
+    template<typename Type>
+    class SearcherFirstObjectResult
+    {
+        Type& result;
+
+    protected:
+        explicit SearcherFirstObjectResult(Type& ref_) : result(ref_) {}
+
+        WorldObjectSearcherContinuation ShouldContinue() const
+        {
+            return result ? WorldObjectSearcherContinuation::Return : WorldObjectSearcherContinuation::Continue;
+        }
+
+        void Insert(Type object)
+        {
+            result = object;
+        }
+    };
+
+    template<typename Type>
+    class SearcherLastObjectResult
+    {
+        Type& result;
+
+    protected:
+        explicit SearcherLastObjectResult(Type& ref_) : result(ref_) {}
+
+        WorldObjectSearcherContinuation ShouldContinue() const
+        {
+            return WorldObjectSearcherContinuation::Continue;
+        }
+
+        void Insert(Type object)
+        {
+            result = object;
+        }
+    };
+
+    // Generic base class to insert elements into arbitrary containers using push_back
+    template<typename Type>
+    class SearcherContainerResult
+    {
+        using InserterType = void(*)(void*, Type&&);
+
+        void* ref;
+        InserterType inserter;
+
+    protected:
+        template<typename T>
+        explicit SearcherContainerResult(T& ref_) : ref(&ref_)
+        {
+            inserter = [](void* containerRaw, Type&& object)
+                {
+                    T* container = reinterpret_cast<T*>(containerRaw);
+                    container->insert(container->end(), std::move(object));
+                };
+        }
+
+        WorldObjectSearcherContinuation ShouldContinue() const
+        {
+            return WorldObjectSearcherContinuation::Continue;
+        }
+
+        void Insert(Type object)
+        {
+            inserter(ref, std::move(object));
+        }
+    };
 
     // Generic base class to insert elements into arbitrary containers using push_back
     template<typename Type>
@@ -677,21 +751,44 @@ namespace Trinity
         template<class NOT_INTERESTED> void Visit(GridRefManager<NOT_INTERESTED> &) { }
     };
 
-    /// AreaTriggers searchers
-    template<class Check>
-    struct AreaTriggerListSearcher
+    // AreaTrigger searchers
+    template<class Check, class Result>
+    struct AreaTriggerSearcherBase : Result
     {
-        WorldObject const* i_searcher;
-        std::list<AreaTrigger*>& i_objects;
+        PhaseShift const* i_phaseShift;
         Check& i_check;
 
-        AreaTriggerListSearcher(WorldObject const* searcher, std::list<AreaTrigger*>& objects, Check& check)
-            : i_searcher(searcher), i_objects(objects), i_check(check) {
+        template<typename Container>
+        AreaTriggerSearcherBase(PhaseShift const* phaseShift, Container& result, Check& check)
+            : Result(result), i_phaseShift(phaseShift), i_check(check) {
         }
 
         void Visit(AreaTriggerMapType& m);
 
         template<class NOT_INTERESTED> void Visit(GridRefManager<NOT_INTERESTED>&) {}
+    };
+
+    template<class Check>
+    struct AreaTriggerSearcher : AreaTriggerSearcherBase<Check, SearcherFirstObjectResult<AreaTrigger*>>
+    {
+        AreaTriggerSearcher(WorldObject const* searcher, AreaTrigger*& result, Check& check)
+            : AreaTriggerSearcherBase<Check, SearcherFirstObjectResult<AreaTrigger*>>(&searcher->GetPhaseShift(), result, check) {}
+    };
+
+    // Last accepted by Check GO if any (Check can change requirements at each call)
+    template<class Check>
+    struct AreaTriggerLastSearcher : AreaTriggerSearcherBase<Check, SearcherLastObjectResult<AreaTrigger*>>
+    {
+        AreaTriggerLastSearcher(WorldObject const* searcher, AreaTrigger*& result, Check& check)
+            : AreaTriggerSearcherBase<Check, SearcherLastObjectResult<AreaTrigger*>>(&searcher->GetPhaseShift(), result, check) {}
+    };
+
+    template<class Check>
+    struct AreaTriggerListSearcher : AreaTriggerSearcherBase<Check, SearcherContainerResult<AreaTrigger*>>
+    {
+        template<typename Container>
+        AreaTriggerListSearcher(WorldObject const* searcher, Container& container, Check& check)
+            : AreaTriggerSearcherBase<Check, SearcherContainerResult<AreaTrigger*>>(&searcher->GetPhaseShift(), container, check) {}
     };
 
     // CHECKS && DO classes
