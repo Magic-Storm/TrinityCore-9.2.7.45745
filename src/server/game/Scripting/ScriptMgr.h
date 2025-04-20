@@ -422,8 +422,8 @@ class TC_GAME_API ItemScript : public ScriptObject
         // Called before casting a combat spell from this item (chance on hit spells of item template, can be used to prevent cast if returning false)
         virtual bool OnCastItemCombatSpell(Player* /*player*/, Unit* /*victim*/, SpellInfo const* /*spellInfo*/, Item* /*item*/) { return true; }
 
-        virtual bool OnItemQuestQueryResponse(Player* player, Item* item) { return false; }
-        virtual bool OnQueryTreasurePicker(Player* player, Item* item) { return false; }
+        virtual bool OnItemQuestQueryResponse(Player* /*player*/ , Item* /*item*/) { return false; }
+        virtual bool OnQueryTreasurePicker(Player* /*player*/, Item* /*item*/) { return false; }
 };
 
 class TC_GAME_API UnitScript : public ScriptObject

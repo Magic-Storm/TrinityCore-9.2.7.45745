@@ -47,6 +47,7 @@
 #include "WorldSession.h"
 #include "WaypointManager.h"
 #include "LootMgr.h"
+#include "Loot.h"
 
 #include "ScriptedGossip.h"
 
@@ -1965,7 +1966,7 @@ public:
 
             for (auto it = pair.second->cbegin(); it != pair.second->cend(); ++it)
             {
-                LootItem const& item = items[it->index];
+                LootItem const& item = items[it->LootListId];
                 if (!(it->is_looted) && !item.is_looted)
                     _ShowLootEntry(handler, item.itemid, item.count, true);
             }
@@ -2179,7 +2180,7 @@ public:
 
 
 
-    static bool HandleNpcGetCommand(ChatHandler* p_Handler, char const* p_Args)
+    static bool HandleNpcGetCommand(ChatHandler* p_Handler, char const* /*p_Args*/ )
     {
         Creature* l_Creature = p_Handler->getSelectedCreature();
 

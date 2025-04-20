@@ -326,8 +326,8 @@ class TC_GAME_API InstanceScript : public ZoneScript
         std::string const& GetHeader() const { return headers; }
         std::vector<PersistentInstanceScriptValueBase*>& GetPersistentScriptValues() { return _persistentScriptValues; }
 
-        virtual bool HandlePlayerRepopRequest(Player* player) const { return false; }
-        virtual void OnPlayerPositionChange(Player* player) { }
+        virtual bool HandlePlayerRepopRequest(Player* /*player*/) const { return false; }
+        virtual void OnPlayerPositionChange(Player* /*player*/) { }
 
     protected:
         void SetHeaders(std::string const& dataHeaders);

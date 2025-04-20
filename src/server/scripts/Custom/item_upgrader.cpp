@@ -436,7 +436,7 @@ class item_upgrader : public ItemScript
             return true;
         }
 
-        bool OnItemQuestQueryResponse(Player* p_Player, Item* p_Item) override
+        bool OnItemQuestQueryResponse(Player* p_Player, Item* /*p_Item*/) override
         {
             auto l_Itr = m_PlayerItemTargets.find(p_Player->GetGUID());
             if (l_Itr == m_PlayerItemTargets.end())
@@ -520,7 +520,7 @@ class item_upgrader : public ItemScript
             return true;
         }
 
-        bool OnQueryTreasurePicker(Player* p_Player, Item* p_Item) override
+        bool OnQueryTreasurePicker(Player* p_Player, Item* /*p_Item*/) override
         {
             auto l_Itr = m_PlayerItemTargets.find(p_Player->GetGUID());
             if (l_Itr == m_PlayerItemTargets.end())
@@ -556,7 +556,7 @@ class item_upgrader : public ItemScript
             return true;
         }
 
-        bool OnQuestAccept(Player* p_Player, Item* p_Item, Quest const* /*p_Quest*/) override
+        bool OnQuestAccept(Player* p_Player, Item* /*p_Item*/, Quest const* /*p_Quest*/) override
         {
             auto l_Itr = m_PlayerItemTargets.find(p_Player->GetGUID());
             if (l_Itr == m_PlayerItemTargets.end())
